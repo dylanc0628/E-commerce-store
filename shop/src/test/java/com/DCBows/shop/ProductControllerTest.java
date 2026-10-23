@@ -1,5 +1,6 @@
 package com.DCBows.shop;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import static org.hamcrest.Matchers.hasSize;
@@ -8,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -130,5 +132,23 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.name", is("Compound bow")))
                 .andExpect(jsonPath("$.type", is("Compound")))
                 .andExpect(jsonPath("$.price", is(999.99)));
+
+        ArgumentCaptor<Product> captor = ArgumentCaptor.forClass(Product.class);
+
+        verify(productService).addProduct(captor.capture());
+        Product passed = captor.getValue();
+        assertEquals("Compound bow", passed.getName());
+        assertEquals("Compound", passed.getType());
+        assertEquals(0, new BigDecimal("999.99").compareTo(passed.getPrice()));
+    }
+
+    @Test 
+    void addProductWithMalformedJsonReturns400() throws Exception {
+        mockMvc.perform(post("/products/addProduct")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{not valid json"))
+            .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(productService);
     }
 }
