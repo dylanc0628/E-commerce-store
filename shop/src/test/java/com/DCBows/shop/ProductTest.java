@@ -20,5 +20,5 @@ public class ProductTest {
         assertThat(newProduct.getType()).isEqualTo("Recurve");
         assertThat(newProduct.getPrice()).isInstanceOf(BigDecimal.class);
         assertThat((BigDecimal) newProduct.getPrice()).isEqualByComparingTo(new BigDecimal("199.99"));
-    }    
+    }
 }
