@@ -11,9 +11,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.BDDMockito.willThrow;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -22,6 +24,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -148,6 +152,104 @@ public class ProductControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{not valid json"))
             .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(productService);
+    }
+
+    @Test 
+    void addProductWithNonNumericPriceReturns400() throws Exception {
+        String body = "{\"name\":\"Compound bow\",\"type\":\"Compound\",\"price\":\"free\"}";
+
+        mockMvc.perform(post("/products/addProduct")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+            .andExpect(status().isBadRequest());
+        
+        verifyNoInteractions(productService);
+    }
+
+    @Test 
+    void addProductWithUnsupportedMediaTypeReturns415() throws Exception {
+        mockMvc.perform(post("/products/addProduct")
+                .contentType(MediaType.TEXT_PLAIN)
+                .content("Compound bow"))
+            .andExpect(status().isUnsupportedMediaType());
+
+        verifyNoInteractions(productService);
+    }
+
+    @Test 
+    void updateProductWhenFoundReturnsUpdatedProduct() throws Exception {
+        Product update = new Product(null, "Black Hunter Recurve", "Recurve", "159.99");
+        Product updated = new Product(1L, "Black Hunter Recurve", "Recurve", "159.99");
+        given(productService.updateProduct(eq(1L), any(Product.class))).willReturn(updated);
+
+        mockMvc.perform(put("/products/update/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(update)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id", is(1)))
+            .andExpect(jsonPath("$.name", is("Black Hunter Recurve")))
+            .andExpect(jsonPath("$.type", is("Recurve")))
+            .andExpect(jsonPath("$.price", is(159.99)));
+
+        ArgumentCaptor<Product> captor = ArgumentCaptor.forClass(Product.class);
+
+        verify(productService).updateProduct(eq(1L), captor.capture());
+
+        assertEquals("Black Hunter Recurve", captor.getValue().getName());
+        assertEquals(0, new BigDecimal("159.99").compareTo(captor.getValue().getPrice()));
+    }
+
+    @Test 
+    void updateProductWhenNotFoundThrowsException() throws Exception {
+        Product update = new Product(null, "Ghost", "Recurve", "1.00");
+
+        given(productService.updateProduct(eq(999_999L), any(Product.class)))
+                .willThrow(new Exception("Product not found: 999999"));
+        
+        ServletException thrown = assertThrows(ServletException.class,
+            () -> mockMvc.perform(put("/products/update/999999")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(update))));
+        
+        assertEquals("Product not found: 999999", thrown.getCause().getMessage());
+    }
+
+    @Test
+    void updateProductWithMalformedJsonReturns400() throws Exception {
+        mockMvc.perform(put("/products/update/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{not valid json}"))
+            .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(productService);
+    }
+
+    @Test
+    void deleteProductWhenFoundReturns200() throws Exception {
+        mockMvc.perform(delete("/products/delete/1"))
+                .andExpect(status().isOk());
+
+        verify(productService).deleteProduct(1L);
+    }
+
+    @Test
+    void deleteProducteWhenNotFoundThrowsException() throws Exception {
+        willThrow(new Exception("Product not found: 999999"))
+            .given(productService).deleteProduct(999_999L);
+
+        ServletException thrown = assertThrows(ServletException.class, 
+            () -> mockMvc.perform(delete("/products/delete/999999")));
+
+        assertEquals("Product not found: 999999", thrown.getCause().getMessage());
+    }
+
+    @Test
+    void deleteProductWithNonNumericIdReturns400() throws Exception {
+        mockMvc.perform(delete("/products/delete/abc"))
+            .andExpect(status().isBadRequest());
+        
 
         verifyNoInteractions(productService);
     }
