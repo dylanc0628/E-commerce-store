@@ -3,9 +3,7 @@ package com.DCBows.shop.domain;
 import java.math.BigDecimal;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Table;
 
-@Table("product")
 public class Product {
 
     @Id
