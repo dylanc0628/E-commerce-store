@@ -2,7 +2,13 @@ package com.DCBows.shop.domain;
 
 import java.math.BigDecimal;
 
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
+
+@Table("product")
 public class Product {
+
+    @Id
     private Long id;
     private String name;
     private String type;
@@ -10,11 +16,11 @@ public class Product {
 
     public Product() {};
 
-    public Product(Long id, String name, String type, String price) {
+    public Product(Long id, String name, String type, BigDecimal price) {
         this.id = id;
         this.name = name;
         this.type = type;
-        this.price = new BigDecimal(price);
+        this.price = price;
     }
 
     public void setId(Long id) {

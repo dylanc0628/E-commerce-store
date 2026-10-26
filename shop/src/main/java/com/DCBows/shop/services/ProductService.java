@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.DCBows.shop.domain.Product;
 import com.DCBows.shop.repository.ProductRepository;
+import com.DCBows.shop.exception.ProductNotFoundException;
 
 @Service 
 @Transactional
@@ -24,16 +25,16 @@ public class ProductService {
 
     @Transactional(readOnly=true)
     public List<Product> findAllProducts() {
-        return (List<Product>) productRepository.findAll();
+        return productRepository.findAll();
     }
 
     @Transactional(readOnly=true)
-    public Product findProductById(Long Id) throws Exception {
-        return productRepository.findById(Id)
-            .orElseThrow(() -> new Exception("Product not found: " + Id));
+    public Product findProductById(long id) {
+        return productRepository.findById(id)
+            .orElseThrow(() -> new ProductNotFoundException(id));
     }
 
-    public Product updateProduct(Long id, Product updates) throws Exception {
+    public Product updateProduct(Long id, Product updates) {
         Product product = findProductById(id);
         product.setName(updates.getName());
         product.setType(updates.getType());
@@ -41,8 +42,10 @@ public class ProductService {
         return productRepository.save(product);
     }
 
-    public void deleteProduct(Long id) throws Exception {
-        Product product = findProductById(id);
-        productRepository.delete(product);
+    public void deleteProduct(Long id) {
+        if (!productRepository.existsById(id)) {
+            throw new ProductNotFoundException(id);
+        }
+        productRepository.deleteById(id);
     }
 }
