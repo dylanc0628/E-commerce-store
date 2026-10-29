@@ -1,4 +1,4 @@
-package com.DCBows.shop;
+package com.DCBows.shop.product_tests;
 
 import java.math.BigDecimal;
 

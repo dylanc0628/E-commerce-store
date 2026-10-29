@@ -1,4 +1,4 @@
-package com.DCBows.shop;
+package com.DCBows.shop.product_tests;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItems;
