@@ -78,7 +78,7 @@ public class ProductRepositoryTest {
     }
 
     @Test 
-    void nullPriceVioldatesNotNullConstraint() {
+    void nullPriceViolatesNotNullConstraint() {
         assertThatThrownBy(() -> productRepository.save(newProduct("Bow", "Recurve", null)))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
